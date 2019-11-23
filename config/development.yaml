@@ -1,0 +1,10 @@
+dbConfig:
+  host: 192.168.10.10
+  username: homestead
+  password: secret
+  database: homestead
+
+discord:
+  prefix: '!'
+  token: NTIzMTMyOTYzNDg4MTM3MjE2.XdkxRQ.PP_wpY1-IX9_Qz-t_YcvKynCPgw
+  channel: 444067403320524802
