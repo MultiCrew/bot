@@ -20,6 +20,7 @@
     "node-dev": "^4.0.0"
   },
   "dependencies": {
+    "@octokit/rest": "^16.35.0",
     "ascii-table": "0.0.9",
     "config": "^3.2.4",
     "discord.js": "^11.5.1",
