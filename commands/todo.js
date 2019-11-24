@@ -16,6 +16,8 @@ module.exports = {
             switch(args[0]) {
                 case 'add':
                     addItem(message, args)
+                case 'list':
+                    listItems(message, args)
             }
         }
     }
@@ -73,4 +75,50 @@ function addItem(message, args) {
             .catch(console.error);
     });
 
+}
+
+// List all cards under the To-Do column
+function listItems(message, args) {
+    const mtc = message.guild.emojis.find(emoji => emoji.name === "mtc");
+    var project = 0;
+    var embed = new Discord.RichEmbed()
+        .setTitle('List To-Do Cards')
+        .setDescription(`React to this message with ${mtc} to list all cards on the copilot project or \:robot: to list all cards on the bot project`)
+    message.channel.send(embed).then(function (msg) {
+        msg.react(mtc).then(() => msg.react('🤖'))
+        const filter = (reaction, user) => {
+            return user.id === message.author.id};
+        msg.awaitReactions(filter, {max: 1, time: 10000})
+            .then(async function(collected) {
+                const reaction = collected.first();
+                switch (reaction.emoji.name) {
+                    case 'mtc':
+                        project = 'Copilot';
+                        break;
+                    case '🤖':
+                        project = 'Bot';
+                        break;
+                }
+                var cards = [];
+                if (project == 'Copilot') {
+                    cards = await octokit.projects.listCards({
+                        column_id: 7168504
+                })
+                } else if (project == 'Bot') {
+                    cards = await octokit.projects.listCards({
+                        column_id: 7227594
+                    })
+                }
+                embed = await new Discord.RichEmbed()
+                    .setTitle('List To-Do Cards')
+                    .setDescription('Below are a list of cards under the ' + project + ' project.')
+                    .addBlankField()
+                    cards.data.forEach(card => {
+                        embed.addField('Card ID: ' + card.id + '.', 'Card Content: ' + card.note + '.')
+                    })
+                console.log(embed)    
+                await message.channel.send(embed);
+            })
+            .catch(console.error);
+    });
 }
