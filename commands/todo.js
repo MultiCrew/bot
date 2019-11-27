@@ -1,9 +1,12 @@
 const Octokit = require("@octokit/rest");
+const { oauthLoginUrl } = require("@octokit/oauth-login-url");
 const Discord = require('discord.js');
-const AsciiTable = require('ascii-table');
 const config = require('config');
-const octokit = Octokit({
-    auth: config.get('github.token'),
+
+const secret = config.get('github.secret');
+
+const octokit = new Octokit({
+    auth: secret,
     userAgent: 'MultiCrew Bot'
 });
 
@@ -16,8 +19,13 @@ module.exports = {
             switch(args[0]) {
                 case 'add':
                     addItem(message, args)
+                    break;
                 case 'list':
-                    listItems(message, args)
+                    listItems(message)
+                    break;
+                case 'delete':
+                    deleteItem(message, args)
+                    break;
             }
         }
     }
@@ -78,7 +86,7 @@ function addItem(message, args) {
 }
 
 // List all cards under the To-Do column
-function listItems(message, args) {
+function listItems(message) {
     const mtc = message.guild.emojis.find(emoji => emoji.name === "mtc");
     var project = 0;
     var embed = new Discord.RichEmbed()
@@ -112,12 +120,91 @@ function listItems(message, args) {
                 embed = await new Discord.RichEmbed()
                     .setTitle('List To-Do Cards')
                     .setDescription('Below are a list of cards under the ' + project + ' project.')
-                    .addBlankField()
                     cards.data.forEach(card => {
-                        embed.addField('Card ID: ' + card.id + '.', 'Card Content: ' + card.note + '.')
-                    })
-                console.log(embed)    
+                        embed.addField('Card ID: ' + card.id, 'Card Content: ' + card.note + '.')
+                    }) 
                 await message.channel.send(embed);
+            })
+            .catch(console.error);
+    });
+}
+
+// Delete a to do card
+function deleteItem(message, args) {
+    const mtc = message.guild.emojis.find(emoji => emoji.name === "mtc");
+    var project = 0;
+    var embed = new Discord.RichEmbed()
+        .setTitle('Delete a To-Do Card')
+        .setDescription(`React to this message with ${mtc} to select the copilot project or \:robot: to select the bot project`)
+    message.channel.send(embed).then(function (msg) {
+        msg.react(mtc).then(() => msg.react('🤖'))
+        const filter = (reaction, user) => {
+            return user.id === message.author.id};
+        msg.awaitReactions(filter, {max: 1, time: 10000})
+            .then(async function(collected) {
+                const reaction = collected.first();
+                switch (reaction.emoji.name) {
+                    case 'mtc':
+                        project = 'Copilot';
+                        break;
+                    case '🤖':
+                        project = 'Bot';
+                        break;
+                }
+                var cards = [];
+                if (project == 'Copilot') {
+                    cards = await octokit.projects.listCards({
+                        column_id: 7168504
+                })
+                } else if (project == 'Bot') {
+                    cards = await octokit.projects.listCards({
+                        column_id: 7227594
+                    })
+                }
+                embed = new Discord.RichEmbed()
+                    .setTitle('Delete a To-Do Card')
+                    .setDescription('You have chosen the ' + project + ' project. Below are all the To-Do cards in that project, you have 30 seconds to input the Card ID to delete the card.')
+                    cards.data.forEach(card => {
+                        embed.addField('Card ID: ' + card.id, 'Card Content: ' + card.note + '.')
+                    }) 
+                msg.channel.send(embed).then(() => {
+                    const filter = response => {
+                        return response.author.id === message.author.id
+                    }
+                    msg.channel.awaitMessages(filter, {max: 1, time: 30000})
+                        .then(async function(collected) {
+                            let card;
+                            card = await octokit.projects.getCard({
+                                card_id: collected.first().content
+                            })
+                            embed = new Discord.RichEmbed()
+                                .setTitle('Delete a To-Do Card Confirmation')
+                                .setDescription('You have selected card ' + card.data.id + ', containing the following content: ' + card.data.note + '. You have 10 seconds to react to this message with ✅ to confirm or ❎ to cancel.')
+                            msg.channel.send(embed).then(function (m) {
+                                m.react('✅').then(() => m.react('❎'))
+                                const filter = (reaction, user) => {
+                                    return user.id === message.author.id};
+                                m.awaitReactions(filter, {max: 1, time: 10000})
+                                    .then(async function(collected) {
+                                        const reaction = collected.first();
+                                        if(reaction.emoji.name == '✅'){
+                                            octokit.projects.deleteCard({
+                                                card_id: card.data.id
+                                            })
+                                            embed = new Discord.RichEmbed()
+                                                .setTitle('Delete a To-Do Card Confirmation')
+                                                .setDescription('To-Do Card deleted')
+                                            msg.channel.send(embed)
+                                        } else if (reaction.emoji.name == '❎') {
+                                            embed = new Discord.RichEmbed()
+                                                .setTitle('Cancelled')
+                                                .setDescription('You have cancelled deleting a To-Do Card.')
+                                            msg.channel.send(embed)
+                                        }
+                                    })
+                            })
+                        });
+                })
             })
             .catch(console.error);
     });
