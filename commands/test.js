@@ -18,9 +18,9 @@ module.exports = {
                     'Authorization': 'Bearer ' + token
                 }
             }
-            axios.get('http://homestead.test/api/test', options)
+            axios.get('http://homestead.test/api/search', options)
             .then(function(response) {
-                message.reply(response.data)
+                console.log(response.data)
             })
             .catch(error => {
                 console.log(error.response)
