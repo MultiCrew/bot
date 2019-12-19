@@ -1,6 +1,7 @@
 const axios = require('axios')
 const config = require('config');
 const AsciiTable = require('ascii-table');
+const FormData = require('form-data');
 let token;
 let airportList = [];
 let aircraftList = [];
@@ -27,13 +28,21 @@ module.exports = {
             case 'search':
                 search(message, args);
                 break;
-        
+            case 'add':
+                add(message, args);
+                break;
+            case 'accept':
+                break;
+            case 'delete':
+                break;
             default:
+                list(message, args);
                 break;
         }
     }
 }
 
+// Search for requests
 function search(message, args){
     var options = 0
     if(args.length > 0){
@@ -42,9 +51,7 @@ function search(message, args){
                 'Accept':'application/json',
                 'Authorization': 'Bearer ' + token
             },
-            data: {
-                'query': args
-            }
+            data: {'query': args}
         }
     }
     else {
@@ -57,12 +64,48 @@ function search(message, args){
     }
     axios.get('http://homestead.test/api/search', options)
     .then(function(response) {
-        const fTable = createTable(response.data);
-        message.reply("```" + fTable.toString() + "```");
+        if(response.data.length > 0) {
+            const fTable = createTable(response.data);
+            message.reply("```" + fTable.toString() + "```");
+        }
+        else {
+            message.reply('there are no public Shared Cockpit requests. You can run the command `.sc add` to create a request');
+        }
     })
     .catch(error => {
         console.log(error.response)
     });
+}
+
+function add(message, args){
+    options = {
+        headers: {
+            'Accept':'application/json',
+            'Authorization': 'Bearer ' + token
+        }
+    }
+    const data = {
+        discord_id: message.author.id,
+        departure: args[0],
+        arrival: args[1],
+        aircraft: args[2]
+    }
+    axios.post('http://homestead.test/api/create', data, options)
+    .then(function(response) {
+        if(response.data == 0) {
+            message.reply('you have not linked your Discord account to copilot, please head over to https://multicrew.co.uk/connect to connect it.')
+        }
+        else{
+            const table = new AsciiTable('Flight Request Confirmation');
+            table.setHeading('ID', 'Departure', 'Arrival', 'Aircraft');
+            table.addRow(response.data.id, response.data.departure, response.data.arrival, response.data.aircraft);
+            message.reply("```" + table.toString() + "```");
+        }
+    })
+    .catch(error => {
+        console.log(error)
+    });
+
 }
 
 // Creates an ascii table for the data to be displayed
@@ -75,6 +118,7 @@ function createTable(data) {
     return table;
 }
 
+/*
 // Checks to see if the arguments are valid aircraft/airport ICAO codes
 function argCheck(arg){
     if (arg.match(airportRegex)) {
@@ -84,3 +128,4 @@ function argCheck(arg){
         aircraftList.push(arg);
     }
 }
+*/
