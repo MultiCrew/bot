@@ -1,10 +1,8 @@
 const axios = require('axios')
 const config = require('config');
 const AsciiTable = require('ascii-table');
-const FormData = require('form-data');
+const Discord = require('discord.js');
 let token;
-let airportList = [];
-let aircraftList = [];
 const airportRegex = /[A-Z]{4}/;
 const aircraftRegex = /[A-Z]{1,}[0-9]{1,}[A-Z]?/;
 
@@ -35,8 +33,11 @@ module.exports = {
                 break;
             case 'delete':
                 break;
+            case 'help':
+                help(message, args);
+                break;
             default:
-                list(message, args);
+                help(message, args);
                 break;
         }
     }
@@ -126,6 +127,18 @@ function add(message, args){
 
 }
 
+// Help command
+function help(message, args){
+    const embed = new Discord.RichEmbed()
+        .setColor('FF550B')
+        .setTitle('Shared Cockpit Command Options')
+        .setDescription('Below is a list of all the available Shared Cockpit command options and their usage with some examples.\nYou are required to link your Copilot account to discord for any commands other than the search command, this can be done at https://multicrew.co.uk/connect \n\nAny arguments in square brackets e.g. `[Argument]` are required for the command.\nAny arguments in less/more than markers e.g. `<Argument>` are optional arguments.')
+        .addField('🔍 Search', 'Search all public Shared Cockpit Requests\nUsage: `.sc search <Search Query>`\nExample: `.sc search DH8D`')
+        .addField('✅  Accept', 'Accept a Shared Cockpit Request\nUsage: `.sc accept [Request ID]`\nExample: `.sc accept 5`')
+        .addField('➕ Add', 'Create a public Shared Cockpit Request\nUsage: `.sc add [Departure ICAO] [Arrival ICAO] [Aircraft ICAO]`\nExample: `.sc add EHAM LOWI A320`')
+        .addField('🗑 Delete', 'Delete a Shared Cockpit Request\nUsage: `.sc delete [Request ID]`\nExample: `.sc delete 5`');
+    message.channel.send(embed);
+}
 
 // Creates an ascii table for the data to be displayed
 function createTable(data) {
