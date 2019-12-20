@@ -77,7 +77,25 @@ function search(message, args){
     });
 }
 
+// Add a request
 function add(message, args){
+    for (let i = 0; i < args.length; i++) {
+        if (i === 0 | i === 1) {
+            if (!argCheck(args[i], 'airport')) {
+                message.reply('your argument `' + args[i] + '` is invalid, please ensure you enter a 4 letter ICAO code, for example EGLL');
+                return;
+            }
+        }
+        else if (i == 2){
+            if (!argCheck(args[i], 'aircraft')) {
+                message.reply('your argument `' + args[i] + '` is invalid, please ensure you enter a 4 letter ICAO code, for example A320');
+                return;
+            }
+        }
+        else if (i > 2){
+            message.reply('you have entered too many arguments, please stick to the following format: `Departure ICAO, Arrival ICAO, Aircraft ICAO`');
+        }
+    };
     options = {
         headers: {
             'Accept':'application/json',
@@ -90,7 +108,7 @@ function add(message, args){
         arrival: args[1],
         aircraft: args[2]
     }
-    axios.post('http://homestead.test/api/create', data, options)
+   axios.post('http://homestead.test/api/create', data, options)
     .then(function(response) {
         if(response.data == 0) {
             message.reply('you have not linked your Discord account to copilot, please head over to https://multicrew.co.uk/connect to connect it.')
@@ -108,6 +126,7 @@ function add(message, args){
 
 }
 
+
 // Creates an ascii table for the data to be displayed
 function createTable(data) {
     const table = new AsciiTable('Search Results');
@@ -118,14 +137,26 @@ function createTable(data) {
     return table;
 }
 
-/*
+
 // Checks to see if the arguments are valid aircraft/airport ICAO codes
-function argCheck(arg){
-    if (arg.match(airportRegex)) {
-        airportList.push(arg);
-    }
-    else if (arg.match(aircraftRegex)) {
-        aircraftList.push(arg);
+function argCheck(arg, type){
+    switch (type) {
+        case 'airport':
+            if (arg.match(airportRegex)){
+                return true;
+            }
+            else {
+                return false;
+            }
+        case 'aircraft':
+            if (arg.match(aircraftRegex)){
+                return true;
+            }
+            else {
+                return false;
+            }
+    
+        default:
+            return false;
     }
 }
-*/
