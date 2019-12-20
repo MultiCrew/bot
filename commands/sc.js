@@ -127,6 +127,16 @@ function add(message, args){
 
 }
 
+// Accept a request
+function accept(message, args){
+
+}
+
+// Delete a request
+function clear(message, args){
+
+}
+
 // Help command
 function help(message, args){
     const embed = new Discord.RichEmbed()
