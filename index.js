@@ -34,6 +34,8 @@ client.on('message', message => {
 
 	if (!command) return;
 
+	if (command.disabled) return;
+
 	if (command.guildOnly && message.channel.type !== 'text') {
 		return message.reply('I can\'t execute that command inside DMs!');
 	}
@@ -46,6 +48,19 @@ client.on('message', message => {
 		}
 
 		return message.channel.send(reply);
+	}
+
+	if (command.roles) {
+		command.roles.forEach(role => {
+			
+		});
+		var hasRole = false;
+		let role;
+		for (let i = 0; i < command.roles.length; i++) {
+			if(message.member.roles.find(r => r.name === command.roles[i])) {hasRole = true;}
+			else role = command.roles[i];
+		}
+		if (!hasRole) return message.reply('you must have the role `' + role + '` to use this command');
 	}
 
 	if (!cooldowns.has(command.name)) {
