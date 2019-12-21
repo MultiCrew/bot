@@ -14,9 +14,9 @@ module.exports = {
         var data = {
             'grant_type': 'client_credentials',
             'client_id': 3,
-            'client_secret': config.get('auth.secret')
+            'client_secret': config.get('request.secret')
         }
-        await axios.post('http://homestead.test/oauth/token', data)
+        await axios.post(`${config.get('request.url')}oauth/token`, data)
         .then(function(response) {
             token = response.data['access_token'];
 		});
@@ -63,7 +63,7 @@ function search(message, args){
             }
         }
     }
-    axios.get('http://homestead.test/api/search', options)
+    axios.get(`${config.get('request.url')}api/search`, options)
     .then(function(response) {
         if(response.data.length > 0) {
             const fTable = createTable(response.data);
@@ -109,7 +109,7 @@ function add(message, args){
         arrival: args[1],
         aircraft: args[2]
     }
-   axios.post('http://homestead.test/api/create', data, options)
+   axios.post(`${config.get('request.url')}api/create`, data, options)
     .then(function(response) {
         if(response.data == 0) {
             message.reply('you have not linked your Discord account to copilot, please head over to https://multicrew.co.uk/connect to connect it.')
@@ -178,7 +178,6 @@ function argCheck(arg, type){
             else {
                 return false;
             }
-    
         default:
             return false;
     }

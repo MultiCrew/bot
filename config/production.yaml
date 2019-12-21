@@ -1,5 +1,7 @@
-dbConfig:
-  host: 
-  username: 
-  password: 
-  database: 
+discord:
+  prefix: '!'
+  token: 
+
+request:
+  url: 
+  secret: 
