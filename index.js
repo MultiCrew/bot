@@ -21,7 +21,6 @@ client.once('ready', () => {
 });
 
 client.on('message', message => {
-	if (message.content.startsWith('[Alert]') || message.content.startsWith('||[Alert]||')) {message.channel.send('@everyone')}
     if (!message.content.startsWith(prefix) || message.author.bot) return;
 
 	if (message.channel.id != config.get('discord.channel')) return;
