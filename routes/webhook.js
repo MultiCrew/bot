@@ -14,6 +14,9 @@ module.exports = class extends Route {
         const parsed = querystring.parse(request.body);
         switch (parsed.type) {
             case 'notification':
+                this.client.users.fetch(parsed.id).then(user => {
+                    user.send(parsed.message);
+                });
                 break;
             case 'role':
                 break;
