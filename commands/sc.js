@@ -3,7 +3,7 @@ const { Discord } = require('discord.js');
 require('dotenv').config();
 const axios = require('axios');
 
-let token;
+const AsciiTable = require('ascii-table');
 
 module.exports = class extends Command {
 
@@ -23,11 +23,42 @@ module.exports = class extends Command {
     }
 
     async run(message, [...params]) {
-        // This is where you place the code you want to run for your command
-        ;
+        //
     }
 
-    async search(message, params) {}
+    async search(message, params) {
+        var options = 0;
+        if(params){
+            options = {
+                headers: {
+                    'Accept':'application/json',
+                    'Authorization': 'Bearer ' + await getToken()
+                },
+                data: {'query': params}
+            };
+        }
+        else {
+            options = {
+                headers: {
+                    'Accept':'application/json',
+                    'Authorization': 'Bearer ' + await getToken()
+                }
+            };
+        }
+        axios.get(`${process.env.REQUEST_URL}api/search`, options)
+        .then(function(response) {
+            if(response.data.length > 0) {
+                const fTable = createTable(response.data);
+                message.reply("```" + fTable.toString() + "```");
+            }
+            else {
+                message.reply('there are no public Shared Cockpit requests. You can run the command `.sc add` to create a request');
+            }
+        })
+        .catch(error => {
+            console.log(error);
+        });
+    }
     async add(message, params) {}
     async accept(message, params) {}
     async delete(message, params) {}
@@ -42,17 +73,28 @@ module.exports = class extends Command {
             .addField('🗑 Delete', 'Delete a Shared Cockpit Request\nUsage: `.sc delete [Request ID]`\nExample: `.sc delete 5`');
         message.channel.send(embed);
     }
-
-    async init() {
-        var data = {
-            'grant_type': 'client_credentials',
-            'client_id': process.env.CLIENT_ID,
-            'client_secret': process.env.CLIENT_SECRET
-        };
-        await axios.post(`${process.env.REQUEST_URL}/oauth/token`, data)
-        .then(function(response) {
-            token = response.data['access_token'];
-		});
-    }
-
 };
+
+// Creates an ascii table for the data to be displayed
+function createTable(data) {
+    const table = new AsciiTable('Search Results');
+    table.setHeading('ID', 'Departure', 'Arrival', 'Aircraft');
+    data.forEach(item => {
+        table.addRow(item.id, item.departure, item.arrival, item.aircraft);
+    });
+    return table;
+}
+
+// Get client token from server
+async function getToken() {
+    var data = {
+        'grant_type': 'client_credentials',
+        'client_id': process.env.CLIENT_ID,
+        'client_secret': process.env.CLIENT_SECRET
+    };
+    const token = await axios.post(`${process.env.REQUEST_URL}oauth/token`, data)
+    .then(function(response) {
+        return response.data['access_token'];
+    });
+    return token;
+}
