@@ -1,5 +1,5 @@
 const { Command } = require('klasa');
-const { Discord } = require('discord.js');
+const { Discord, MessageEmbed } = require('discord.js');
 require('dotenv').config();
 const axios = require('axios');
 
@@ -16,9 +16,15 @@ module.exports = class extends Command {
             enabled: true,
             cooldown: 3,
             description: 'Interact with Shared Cockpit Requests',
-            usage: '<search|add|accept|delete|help:default> (departure:icao) (arrival:icao) (aicraft:icao)',
+            usage: '<search|add|accept|delete|help:default> (departure:airporticao) (arrival:airporticao) (aicraft:aircrafticao)',
             usageDelim: ' ',
             subcommands: true
+        });
+        this.createCustomResolver('airporticao', (arg, possible, message, params) => {
+            if(params[0] == 'search' || params[0] == 'help') return arg;
+            else {
+                throw arg;
+            }
         });
     }
 
@@ -63,7 +69,7 @@ module.exports = class extends Command {
     async accept(message, params) {}
     async delete(message, params) {}
     async help(message, params) {
-        const embed = new Discord.RichEmbed()
+        const embed = new MessageEmbed()
             .setColor('FF550B')
             .setTitle('Shared Cockpit Command Options')
             .setDescription('Below is a list of all the available Shared Cockpit command options and their usage with some examples.\nYou are required to link your Copilot account to discord for any commands other than the search command, this can be done at https://multicrew.co.uk/connect \n\nAny arguments in square brackets e.g. `[Argument]` are required for the command.\nAny arguments in less/more than markers e.g. `<Argument>` are optional arguments.')
