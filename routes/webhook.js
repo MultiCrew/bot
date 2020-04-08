@@ -17,6 +17,11 @@ module.exports = class extends Route {
                 break;
             case 'role':
                 break;
+            case 'connection':
+                this.client.users.fetch(parsed.id).then(user => {
+                    user.send(parsed.message);
+                });
+                break;
             default:
                 break;
         }
