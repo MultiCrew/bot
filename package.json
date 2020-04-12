@@ -29,7 +29,8 @@
     "form-data": "^3.0.0",
     "js-yaml": "^3.13.1",
     "klasa": "github:dirigeants/klasa",
-    "klasa-dashboard-hooks": "github:dirigeants/klasa-dashboard-hooks"
+    "klasa-dashboard-hooks": "github:dirigeants/klasa-dashboard-hooks",
+    "query-string": "^6.12.1"
   },
   "keywords": []
 }

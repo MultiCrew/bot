@@ -1,5 +1,5 @@
 const { Route } = require('klasa-dashboard-hooks');
-const querystring = require('querystring');
+const querystring = require('query-string');
 
 module.exports = class extends Route {
 
@@ -11,7 +11,7 @@ module.exports = class extends Route {
     }
 
     post(request, response) {
-        const parsed = querystring.parse(request.body);
+        const parsed = querystring.parse(request.body, {arrayFormat: 'index'});
         switch (parsed.type) {
             case 'notification':
                 this.client.users.fetch(parsed.id).then(user => {
@@ -22,6 +22,14 @@ module.exports = class extends Route {
                 break;
             case 'connection':
                 this.client.users.fetch(parsed.id).then(user => {
+                    const guild = this.client.guilds.cache.get('440545668168286249');
+                    for (let i = 0; i < parsed.optional.length; i++) {
+                        if(id == '440550777912819712') { continue; }
+                        const id = parsed.optional[i];
+                        let role = guild.roles.cache.get(id);
+                        const member = guild.member(user);
+                        member.roles.add(role);
+                    }
                     user.send(parsed.message);
                 });
                 break;
