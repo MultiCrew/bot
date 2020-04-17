@@ -13,7 +13,7 @@ module.exports = class extends Command {
          * if all options are default, you can omit the constructor completely
          */
         super(...args, {
-            enabled: true,
+            enabled: false,
             cooldown: 3,
             description: 'Interact with Shared Cockpit Requests',
             usage: '<search|add|accept|delete|help:default> (departure:airporticao) (arrival:airporticao) (aicraft:aircrafticao)',
