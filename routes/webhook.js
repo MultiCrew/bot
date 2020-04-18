@@ -24,8 +24,8 @@ module.exports = class extends Route {
                 this.client.users.fetch(parsed.id).then(user => {
                     const guild = this.client.guilds.cache.get('440545668168286249');
                     for (let i = 0; i < parsed.optional.length; i++) {
-                        if(id == '440550777912819712') { continue; }
                         const id = parsed.optional[i];
+                        if(id == '440550777912819712') { continue; }
                         let role = guild.roles.cache.get(id);
                         const member = guild.member(user);
                         member.roles.add(role);
