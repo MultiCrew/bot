@@ -52,7 +52,7 @@ exports.config = {
      */
     commandEditing: false,
     commandLogging: false,
-    typing: false,
+    typing: true,
 
     /**
      * Database Options

@@ -33,6 +33,9 @@ module.exports = class extends Route {
                     user.send(parsed.message);
                 });
                 break;
+            case 'beta_notification':
+                this.client.channels.cache.get('741561495699062865').send(parsed.message);
+                break;
             default:
                 break;
         }
