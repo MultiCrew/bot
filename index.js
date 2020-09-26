@@ -1,5 +1,9 @@
 const { AkairoClient, CommandHandler, ListenerHandler } = require('discord-akairo');
 require('dotenv').config();
+const express = require('express');
+const bodyParser = require("body-parser");
+const app = express();
+const port = 3000;
 
 class MyClient extends AkairoClient {
     constructor() {
@@ -18,12 +22,12 @@ class MyClient extends AkairoClient {
             directory: './listeners/'
 		});
 		
-		this.listenerHandler.setEmitters({
-			process: process,
-		});
+        this.listenerHandler.setEmitters({
+            process: process,
+        });
 		
 		this.commandHandler.loadAll();
-		this.listenerHandler.loadAll();
+        this.listenerHandler.loadAll();
 
         // this.commandHandler.resolver.addType('aircraftICAO', (message, phrase) => {
         //     if (!phrase) return null;
@@ -60,4 +64,16 @@ client.on('ready', () => {
         type: 'WATCHING'
     });
     console.log(`Successfully initialized.`);
+});
+
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+
+app.post('/webhook', (req, res) => {
+    process.emit('webhook', req.body);
+    //return res.end();
+});
+
+app.listen(port, () => {
+  console.log(`Server listening at http://localhost:${port}`);
 });
