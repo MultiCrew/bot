@@ -71,7 +71,7 @@ app.use(bodyParser.json());
 
 app.post('/webhook', (req, res) => {
     process.emit('webhook', req.body);
-    //return res.end();
+    return res.end();
 });
 
 app.listen(port, () => {
