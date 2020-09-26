@@ -1,4 +1,4 @@
-const { Command } = require('discord-akairo');
+const { Command, Argument } = require('discord-akairo');
 const { Discord, MessageEmbed, MessageAttachment } = require('discord.js');
 
 class AnnounceCommand extends Command {
@@ -25,10 +25,9 @@ class AnnounceCommand extends Command {
 				},
 				{
 					id: 'image',
-					type: 'url',
+					type: Argument.union('string', 'url'),
 					prompt: {
 						start: 'Enter an image url to be attached to the embed. Enter `skip` if you would not like to attach one',
-						optional: true
 					}
 				},
 				{
@@ -52,6 +51,10 @@ class AnnounceCommand extends Command {
 		return null;
 	}
 
+	checkURL(url) {
+		return(url.match(/\.(jpeg|jpg|gif|png)$/) != null);
+	}
+
 	exec(message, args) {
 		const attachment = new MessageAttachment('./assets/icon.png', 'icon.png');
 		const embed = new MessageEmbed()
@@ -60,7 +63,9 @@ class AnnounceCommand extends Command {
 			.setDescription(args.content)
 			.attachFiles(attachment)
 			.setThumbnail('attachment://icon.png');
-		
+		if (this.checkURL(args.image)) {
+			embed.setImage(args.image);
+		}
 		const channel = this.client.channels.cache.get(args.channel.id);
 		channel.send(embed);
 	}
