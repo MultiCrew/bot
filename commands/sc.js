@@ -1,68 +1,120 @@
-const { Command } = require('klasa');
+const { Command } = require('discord-akairo');
 const { Discord, MessageEmbed } = require('discord.js');
 require('dotenv').config();
 const axios = require('axios');
+const qs = require('qs');
 
 const AsciiTable = require('ascii-table');
 
-module.exports = class extends Command {
+class SCCommand extends Command {
 
-    constructor(...args) {
-        /**
-         * Any default options can be omitted completely.
-         * if all options are default, you can omit the constructor completely
-         */
-        super(...args, {
-            enabled: false,
-            cooldown: 3,
+    constructor() {
+        super('sc', {
+            aliases: ['sc'],
+            typing: true,
             description: 'Interact with Shared Cockpit Requests',
-            usage: '<search|add|accept|delete|help:default> (departure:airporticao) (arrival:airporticao) (aicraft:aircrafticao)',
-            usageDelim: ' ',
-            subcommands: true
-        });
-        this.createCustomResolver('airporticao', (arg, possible, message, params) => {
-            if(params[0] == 'search' || params[0] == 'help') return arg;
-            else {
-                throw arg;
-            }
-        });
-    }
-
-    async run(message, [...params]) {
-        //
-    }
-
-    async search(message, params) {
-        var options = 0;
-        if(params){
-            options = {
-                headers: {
-                    'Accept':'application/json',
-                    'Authorization': 'Bearer ' + await getToken()
-                },
-                data: {'query': params}
-            };
-        }
-        else {
-            options = {
-                headers: {
-                    'Accept':'application/json',
-                    'Authorization': 'Bearer ' + await getToken()
+            // usage: '<search|add|accept|delete|help:default> (departure:airportICAO) (arrival:airportICAO) (aicraft:aircraftICAO)',
+            // usageDelim: ' ',
+            args: [
+                {
+                    id: 'type',
+                    type: ['search', 'add', 'accept', 'delete', 'help'],
+                    default: 'help'
                 }
-            };
+            ]
+        });
+    }
+
+    exec(message, args) {
+        switch (args.type) {
+            case 'search':
+                return this.search(message, args);
+                break;
+            case 'add':
+                return this.add(message, args);
+                break;
+            case 'accept':
+                return this.accept(message, args);
+                break;
+            case 'delete':
+                return this.delete(message, args);
+                break;
+            case 'help':
+                return this.help(message, args);
+                break;
+            default:
+                return this.help(message, args);
+                break;
         }
-        axios.get(`${process.env.REQUEST_URL}api/search`, options)
-        .then(function(response) {
-            if(response.data.length > 0) {
-                const fTable = createTable(response.data);
-                message.reply("```" + fTable.toString() + "```");
+    }
+
+    async search(message, args) {
+        const token = await getToken();
+        var options = 0;
+        var fail = false;
+        const embed = new MessageEmbed()
+            .setColor('FF550B')
+            .setTitle('Search all public Shared Cockpit Requests')
+            .setDescription('Please enter a comma separated list of Aircraft or Airport ICAO codes you would like to search with.\nIf you would like to search for all public requests, just type `none`');
+        message.channel.send(embed);
+        message.channel.awaitMessages(m => m.author.id == message.author.id, {max: 1, time: 30000, errors: ['time']}).then(collected => {
+            if (collected.first().content.toLowerCase() == 'none') {
+                options = {
+                    headers: {
+                        'Accept':'application/json',
+                        'Authorization': 'Bearer ' + token,
+                    }
+                };
+            } else {
+                const params = collected.first().content.split(/\s*,\s*/u);
+                params.forEach(function(param, index) {
+                    if (/^[A-Z]{4}$/i.test(param)) { // for airports
+                        return params[index] = param.toUpperCase();
+                    } else if (/^[A-Z]{1,}[0-9]{1,}[A-Z]?$/i.test(param)) { // for aircraft
+                        return params[index] = param.toUpperCase();
+                    } else {
+                        fail = true;
+                        const embed = new MessageEmbed()
+                            .setColor('FF550B')
+                            .setTitle('Search Query Error')
+                            .setDescription('<@!' + message.author.id + '>, your inputted search query `' + param + '` is not a valid ICAO code, to try a new search query, simply run `.sc search` again');
+                        return message.channel.send(embed);
+                    }
+                });
+                options = {
+                    headers: {
+                        'Accept':'application/json',
+                        'Authorization': 'Bearer ' + token,
+                    },
+                    params: {'query': params},
+                    paramsSerializer: params => {
+                        return qs.stringify(params);
+                    }
+                    
+                };
             }
-            else {
-                message.reply('there are no public Shared Cockpit requests. You can run the command `.sc add` to create a request');
+            if (fail) {
+                return;
             }
-        })
-        .catch(error => {
-            console.log(error);
+            console.log(options);
+            axios.get(`${process.env.REQUEST_URL}api/search`, options)
+            .then(function(response) {
+                if (typeof response.data == 'object') {
+                    response.data = Object.values(response.data);
+                }
+                if(response.data.length > 0) {
+                    const fTable = createTable(response.data);
+                    message.reply("```" + fTable.toString() + "```");
+                }
+                else {
+                    message.reply('there are no public Shared Cockpit requests. You can run the command `.sc add` to create a request');
+                }
+            })
+            .catch(error => {
+                console.log(error);
+            });
+        }).catch(err => {
+            console.log(err);
         });
     }
     async add(message, params) {}
@@ -72,11 +124,11 @@ module.exports = class extends Command {
         const embed = new MessageEmbed()
             .setColor('FF550B')
             .setTitle('Shared Cockpit Command Options')
-            .setDescription('Below is a list of all the available Shared Cockpit command options and their usage with some examples.\nYou are required to link your Copilot account to discord for any commands other than the search command, this can be done at https://multicrew.co.uk/connect \n\nAny arguments in square brackets e.g. `[Argument]` are required for the command.\nAny arguments in less/more than markers e.g. `<Argument>` are optional arguments.')
-            .addField('🔍 Search', 'Search all public Shared Cockpit Requests\nUsage: `.sc search <Search Query>`\nExample: `.sc search DH8D`')
-            .addField('✅  Accept', 'Accept a Shared Cockpit Request\nUsage: `.sc accept [Request ID]`\nExample: `.sc accept 5`')
-            .addField('➕ Add', 'Create a public Shared Cockpit Request\nUsage: `.sc add [Departure ICAO] [Arrival ICAO] [Aircraft ICAO]`\nExample: `.sc add EHAM LOWI A320`')
-            .addField('🗑 Delete', 'Delete a Shared Cockpit Request\nUsage: `.sc delete [Request ID]`\nExample: `.sc delete 5`');
+            .setDescription('Below is a list of all the available Shared Cockpit command options and their usage with some examples.\nYou are required to link your Copilot account to discord for any commands other than the search command, this can be done at https://multicrew.co.uk/connect')
+            .addField('🔍 Search', 'Search all public Shared Cockpit Requests\nUsage: `.sc search`')
+            .addField('✅  Accept', 'Accept a Shared Cockpit Request\nUsage: `.sc accept')
+            .addField('➕ Add', 'Create a public Shared Cockpit Request\nUsage: `.sc add`')
+            .addField('🗑 Delete', 'Delete a Shared Cockpit Request\nUsage: `.sc delete`');
         message.channel.send(embed);
     }
 };
@@ -86,7 +138,13 @@ function createTable(data) {
     const table = new AsciiTable('Search Results');
     table.setHeading('ID', 'Departure', 'Arrival', 'Aircraft');
     data.forEach(item => {
-        table.addRow(item.id, item.departure, item.arrival, item.aircraft);
+        if (item.departure.length > 1) {
+            item.departure = item.departure.join('/');
+        }
+        if (item.arrival.length > 1) {
+            item.arrival = item.arrival.join('/');
+        }
+        table.addRow(item.id, item.departure, item.arrival, item.aircraft.icao);
     });
     return table;
 }
@@ -104,3 +162,5 @@ async function getToken() {
     });
     return token;
 }
+
+module.exports = SCCommand;
