@@ -1,18 +1,53 @@
-const { Client } = require('klasa');
-const { config, token } = require('./config');
+const { AkairoClient, CommandHandler } = require('discord-akairo');
+require('dotenv').config();
 
-Client.use(require('klasa-dashboard-hooks'));
+class MyClient extends AkairoClient {
+    constructor() {
+        super({
+            // Options for Akairo go here.
+        }, {
+            // Options for discord.js goes here.
+        });
 
-class MyKlasaClient extends Client {
+        this.commandHandler = new CommandHandler(this, {
+            directory: './commands/',
+            prefix: '.'
+        });
+        this.commandHandler.loadAll();
 
-    constructor(...args) {
-        super(...args);
+        this.commandHandler.resolver.addType('aircraftICAO', (message, phrase) => {
+            if (!phrase) return null;
+            const regex = /[A-Z]{1,}[0-9]{1,}[A-Z]?/;
 
-        // Add any properties to your Klasa Client
+            const result = regex.exec(arg);
+            if (result) {
+                return arg.toUpperCase();
+            } else {
+                return null;
+            }
+        });
+
+        this.commandHandler.resolver.addType('airportICAO', (message, phrase) => {
+            if (!phrase) return null;
+            const regex = /[A-Z]{4}/i;
+
+            const result = regex.exec(arg);
+            if (result) {
+                return arg.toUpperCase();
+            } else {
+                return null;
+            }
+        });
     }
-
-    // Add any methods to your Klasa Client
-
 }
 
-new MyKlasaClient(config).login(token);
+const client = new MyClient();
+client.login(process.env.DISCORD_TOKEN);
+
+client.on('ready', () => {
+    client.user.setStatus('idle');
+    client.user.setActivity('.sc', {
+        type: 'WATCHING'
+    });
+    console.log(`Successfully initialized.`);
+});
