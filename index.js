@@ -1,4 +1,4 @@
-const { AkairoClient, CommandHandler } = require('discord-akairo');
+const { AkairoClient, CommandHandler, ListenerHandler } = require('discord-akairo');
 require('dotenv').config();
 
 class MyClient extends AkairoClient {
@@ -12,32 +12,42 @@ class MyClient extends AkairoClient {
         this.commandHandler = new CommandHandler(this, {
             directory: './commands/',
             prefix: '.'
-        });
-        this.commandHandler.loadAll();
+		});
 
-        this.commandHandler.resolver.addType('aircraftICAO', (message, phrase) => {
-            if (!phrase) return null;
-            const regex = /[A-Z]{1,}[0-9]{1,}[A-Z]?/;
+		this.listenerHandler = new ListenerHandler(this, {
+            directory: './listeners/'
+		});
+		
+		this.listenerHandler.setEmitters({
+			process: process,
+		});
+		
+		this.commandHandler.loadAll();
+		this.listenerHandler.loadAll();
 
-            const result = regex.exec(arg);
-            if (result) {
-                return arg.toUpperCase();
-            } else {
-                return null;
-            }
-        });
+        // this.commandHandler.resolver.addType('aircraftICAO', (message, phrase) => {
+        //     if (!phrase) return null;
+        //     const regex = /[A-Z]{1,}[0-9]{1,}[A-Z]?/;
 
-        this.commandHandler.resolver.addType('airportICAO', (message, phrase) => {
-            if (!phrase) return null;
-            const regex = /[A-Z]{4}/i;
+        //     const result = regex.exec(arg);
+        //     if (result) {
+        //         return arg.toUpperCase();
+        //     } else {
+        //         return null;
+        //     }
+        // });
 
-            const result = regex.exec(arg);
-            if (result) {
-                return arg.toUpperCase();
-            } else {
-                return null;
-            }
-        });
+        // this.commandHandler.resolver.addType('airportICAO', (message, phrase) => {
+        //     if (!phrase) return null;
+        //     const regex = /[A-Z]{4}/i;
+
+        //     const result = regex.exec(arg);
+        //     if (result) {
+        //         return arg.toUpperCase();
+        //     } else {
+        //         return null;
+        //     }
+		// });
     }
 }
 
