@@ -12,8 +12,6 @@ class SCCommand extends Command {
             aliases: ['sc'],
             typing: true,
             description: 'Interact with Shared Cockpit Requests',
-            // usage: '<search|add|accept|delete|help:default> (departure:airportICAO) (arrival:airportICAO) (aicraft:aircraftICAO)',
-            // usageDelim: ' ',
             args: [
                 {
                     id: 'type',
@@ -24,19 +22,20 @@ class SCCommand extends Command {
         });
     }
 
-    exec(message, args) {
+    async exec(message, args) {
+        const token = await getToken();
         switch (args.type) {
             case 'search':
-                return this.search(message, args);
+                return this.search(message, args, token);
                 break;
             case 'add':
-                return this.add(message, args);
+                return this.add(message, args, token);
                 break;
             case 'accept':
-                return this.accept(message, args);
+                return this.accept(message, args, token);
                 break;
             case 'delete':
-                return this.delete(message, args);
+                return this.delete(message, args, token);
                 break;
             case 'help':
                 return this.help(message, args);
@@ -47,14 +46,13 @@ class SCCommand extends Command {
         }
     }
 
-    async search(message, args) {
-        const token = await getToken();
+    async search(message, args, token) {
         var options = 0;
         var fail = false;
         const embed = new MessageEmbed()
             .setColor('FF550B')
-            .setTitle('Search all public Shared Cockpit Requests')
-            .setDescription('Please enter a comma separated list of Aircraft or Airport ICAO codes you would like to search with.\nIf you would like to search for all public requests, just type `none`');
+            .setTitle('Search all Public Shared Cockpit Requests')
+            .setDescription('Please enter a comma separated list of aircraft or airport ICAO codes you would like to search with.\nIf you would like to search for all public requests, just type `none`');
         message.channel.send(embed);
         message.channel.awaitMessages(m => m.author.id == message.author.id, {max: 1, time: 30000, errors: ['time']}).then(collected => {
             if (collected.first().content.toLowerCase() == 'none') {
@@ -118,9 +116,8 @@ class SCCommand extends Command {
                             .setThumbnail('attachment://icon.png')
                             .setTimestamp(request.created_at)
                             .addField('Departure', request.departure, true)
-                            .addField('Arrival', request.arrival)
-                            .addField('Aircraft ICAO', request.aircraft.icao, true)
-                            .addField('Aircraft Simulator', request.aircraft.sim, true);
+                            .addField('Arrival', request.arrival, true)
+                            .addField('Aircraft', request.aircraft.name);
                         pagesArray.push(embed);
                     });
                     new rm.menu({
@@ -144,9 +141,94 @@ class SCCommand extends Command {
             console.log(err);
         });
     }
-    async add(message, params) {}
-    async accept(message, params) {}
-    async delete(message, params) {}
+    async add(message, params, token) {
+        let data = {
+            departure: '',
+            arrival: '',
+            aircraft: '',
+            requestee_id: message.author.id
+        };
+        let fail = false;
+        const embed = new MessageEmbed()
+            .setColor('FF550B')
+            .setTitle('Add a New Public Shared Cockpit Request')
+            .setDescription('Enter a comma separated list of preferred departure airport ICAO codes, you may only enter one or you can enter `none` for no preference.\nRemember you must have at least one departure or arrival airport set');
+        message.channel.send(embed);
+        message.channel.awaitMessages(m => m.author.id == message.author.id, {max: 1, time: 30000}).then(collected => {
+            if (collected.first().content.toLowerCase() == 'none') {
+                data.departure = null;
+            } else {
+                const params = collected.first().content.split(/\s*,\s*/u);
+                params.forEach(function(param, index) {
+                    if (/^[A-Z]{4}$/i.test(param)) { // for airports
+                        return params[index] = param.toUpperCase();
+                    } else {
+                        fail = true;
+                        const embed = new MessageEmbed()
+                            .setColor('FF550B')
+                            .setTitle('Invalid Airport ICAO Code')
+                            .setDescription('Your inputted departure `' + param + '` is not a valid ICAO code, to try again, simply run `.sc add` again');
+                        return message.reply(embed);
+                    }
+                });
+                data.departure = params;
+            }
+            if (fail) {
+                return;
+            };
+            embed.setDescription('Enter a comma separated list of preferred arrival airport ICAO codes, you may only enter one or you can enter `none` for no preference.\nRemember you must have at least one departure or arrival airport set');
+            message.channel.send(embed);
+            message.channel.awaitMessages(m => m.author.id == message.author.id, {max: 1, time: 30000}).then(collected => {
+                if (collected.first().content.toLowerCase() == 'none') {
+                    data.arrival = null;
+                    if (!data.departure && !data.arrival) {
+                        fail = true;
+                        const embed = new MessageEmbed()
+                            .setColor('FF550B')
+                            .setTitle('No Airport Preference Set')
+                            .setDescription('You have not set a departure or arrival preference, please try again by running `.sc add`');
+                        return message.reply(embed);
+                    }
+                } else {
+                    const params = collected.first().content.split(/\s*,\s*/u);
+                    params.forEach(function(param, index) {
+                        if (/^[A-Z]{4}$/i.test(param)) { // for airports
+                            return params[index] = param.toUpperCase();
+                        } else {
+                            fail = true;
+                            const embed = new MessageEmbed()
+                                .setColor('FF550B')
+                                .setTitle('Invalid Airport ICAO Code')
+                                .setDescription('Your inputted arrival `' + param + '` is not a valid ICAO code, to try again, simply run `.sc add` again');
+                            return message.reply(embed);
+                        }
+                    });
+                    data.arrival = params;
+                }
+                embed.setDescription('Enter the ICAO code of the aircraft you would like as part of your request');
+                message.channel.send(embed);
+                message.channel.awaitMessages(m => m.author.id == message.author.id, {max: 1, time: 30000}).then(collected => {
+                    if (/^[A-Z]{1,}[0-9]{1,}[A-Z]?$/i.test(collected.first().content.toUpperCase())) { // for aircraft
+                        data.aircraft = collected.first().content.toUpperCase();
+                    } else {
+                        fail = true;
+                        const embed = new MessageEmbed()
+                            .setColor('FF550B')
+                            .setTitle('Invalid Aircraft ICAO Code')
+                            .setDescription('Your inputted aircraft `' + collected.first().content.toUpperCase() + '` is not a valid ICAO code, to try again, simply run `.sc add` again');
+                        return message.reply(embed);
+                    }
+                    if (fail) {
+                        return;
+                    } else {
+                        console.log(data);
+                    }
+                });
+            });
+        });
+    }
+    async accept(message, params, token) {}
+    async delete(message, params, token) {}
     async help(message, params) {
         const embed = new MessageEmbed()
             .setColor('FF550B')
