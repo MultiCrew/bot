@@ -1,10 +1,9 @@
 const { Command } = require('discord-akairo');
-const { Discord, MessageEmbed } = require('discord.js');
+const { MessageEmbed, MessageAttachment } = require('discord.js');
+const rm = require('discord.js-reaction-menu');
 require('dotenv').config();
 const axios = require('axios');
 const qs = require('qs');
-
-const AsciiTable = require('ascii-table');
 
 class SCCommand extends Command {
 
@@ -96,18 +95,46 @@ class SCCommand extends Command {
             if (fail) {
                 return;
             }
-            console.log(options);
             axios.get(`${process.env.REQUEST_URL}api/search`, options)
             .then(function(response) {
                 if (typeof response.data == 'object') {
                     response.data = Object.values(response.data);
                 }
                 if(response.data.length > 0) {
-                    const fTable = createTable(response.data);
-                    message.reply("```" + fTable.toString() + "```");
+                    const pagesArray = [];
+                    response.data.forEach(request => {
+                        if (request.departure.length > 1) {
+                            request.departure = request.departure.join('/');
+                        }
+                        if (request.arrival.length > 1) {
+                            request.arrival = request.arrival.join('/');
+                        }
+                        const attachment = new MessageAttachment('./assets/icon.png', 'icon.png');
+                        const embed = new MessageEmbed()
+                            .setColor('FF550B')
+                            .setTitle(`Request ID: ${request.id}`)
+                            .setAuthor(`Created by: ${request.requestee.username}`)
+                            .attachFiles(attachment)
+                            .setThumbnail('attachment://icon.png')
+                            .setTimestamp(request.created_at)
+                            .addField('Departure', request.departure, true)
+                            .addField('Arrival', request.arrival)
+                            .addField('Aircraft ICAO', request.aircraft.icao, true)
+                            .addField('Aircraft Simulator', request.aircraft.sim, true);
+                        pagesArray.push(embed);
+                    });
+                    new rm.menu({
+                        channel: message.channel,
+                        userID: message.author.id,
+                        pages: pagesArray
+                    });
                 }
                 else {
-                    message.reply('there are no public Shared Cockpit requests. You can run the command `.sc add` to create a request');
+                    const embed = new MessageEmbed()
+                        .setColor('FF550B')
+                        .setTitle('No Requests')
+                        .setDescription('There are no public Shared Cockpit requests matching that search query. You can run the command `.sc add` to create a request');
+                    message.reply(embed);
                 }
             })
             .catch(error => {
@@ -132,22 +159,6 @@ class SCCommand extends Command {
         message.channel.send(embed);
     }
 };
-
-// Creates an ascii table for the data to be displayed
-function createTable(data) {
-    const table = new AsciiTable('Search Results');
-    table.setHeading('ID', 'Departure', 'Arrival', 'Aircraft');
-    data.forEach(item => {
-        if (item.departure.length > 1) {
-            item.departure = item.departure.join('/');
-        }
-        if (item.arrival.length > 1) {
-            item.arrival = item.arrival.join('/');
-        }
-        table.addRow(item.id, item.departure, item.arrival, item.aircraft.icao);
-    });
-    return table;
-}
 
 // Get client token from server
 async function getToken() {

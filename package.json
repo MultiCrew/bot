@@ -21,12 +21,12 @@
     "node-dev": "^5.2.0"
   },
   "dependencies": {
-    "ascii-table": "0.0.9",
     "axios": "^0.20.0",
     "body-parser": "^1.19.0",
     "config": "^3.3.2",
     "discord-akairo": "^8.1.0",
     "discord.js": "github:discordjs/discord.js",
+    "discord.js-reaction-menu": "^1.1.1",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "qs": "^6.9.4"
