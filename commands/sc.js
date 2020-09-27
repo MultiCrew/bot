@@ -205,24 +205,58 @@ class SCCommand extends Command {
                     });
                     data.arrival = params;
                 }
-                embed.setDescription('Enter the ICAO code of the aircraft you would like as part of your request');
-                message.channel.send(embed);
-                message.channel.awaitMessages(m => m.author.id == message.author.id, {max: 1, time: 30000}).then(collected => {
-                    if (/^[A-Z]{1,}[0-9]{1,}[A-Z]?$/i.test(collected.first().content.toUpperCase())) { // for aircraft
-                        data.aircraft = collected.first().content.toUpperCase();
-                    } else {
-                        fail = true;
+                axios.get(`${process.env.REQUEST_URL}api/aircraft`, {
+                    headers: {
+                        'Accept':'application/json',
+                        'Authorization': 'Bearer ' + token,
+                    },
+                }).then(response => {
+                    embed.setDescription('Enter the ID of the aircraft you would like to add to your request');
+                    response.data.forEach(aircraft => {
+                        embed.addField(aircraft.name, `ID: ${aircraft.id}, ICAO: ${aircraft.icao}, Sim: ${aircraft.sim}`);
+                    });
+                    message.channel.send(embed);
+                    message.channel.awaitMessages(m => m.author.id == message.author.id, {max: 1, time: 30000}).then(collected => {
+                        var id = parseInt(collected.first().content, 10);
+                        if (0 < id <= response.data.length) {
+                            data.aircraft = id;
+                        } else {
+                            fail = true;
+                            const embed = new MessageEmbed()
+                                .setColor('FF550B')
+                                .setTitle('Invalid Aircraft ID')
+                                .setDescription('Your inputted aircraft `' + id + '` is not a valid aircraft ID code, to try again, simply run `.sc add` again');
+                            return message.reply(embed);
+                        }
                         const embed = new MessageEmbed()
                             .setColor('FF550B')
-                            .setTitle('Invalid Aircraft ICAO Code')
-                            .setDescription('Your inputted aircraft `' + collected.first().content.toUpperCase() + '` is not a valid ICAO code, to try again, simply run `.sc add` again');
-                        return message.reply(embed);
-                    }
-                    if (fail) {
-                        return;
-                    } else {
-                        console.log(data);
-                    }
+                            .setTitle('Add a New Public Shared Cockpit Request')
+                            .setDescription('Confirm the details for your Shared Cockpit Request')
+                            .addField('Departure', data.departure, true)
+                            .addField('Arrival', data.arrival, true)
+                            .addField('Aircraft ID', data.aircraft);
+                        message.reply(embed).then(msgEmbed => {
+                            msgEmbed.react('👍');
+                            msgEmbed.react('👎');
+                            msgEmbed.awaitReactions((reaction, user) => user.id == message.author.id && (reaction.emoji.name == '👍' || reaction.emoji.name == '👎'),
+                                {max: 1, time: 30000}).then(collected => {
+                                if (collected.first().emoji.name == '👍') {
+                                    console.log('approved');
+                                    msgEmbed.delete();
+                                    if (fail) {
+                                        return;
+                                    } else {
+                                        console.log(data);
+                                    }
+                                } else
+                                    console.log('denied');
+                                    msgEmbed.delete();
+                                    return;
+                                });
+                            });
+                        });
+                }).catch(err => {
+                    console.log(err);
                 });
             });
         });
