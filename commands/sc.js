@@ -74,8 +74,8 @@ class SCCommand extends Command {
                         const embed = new MessageEmbed()
                             .setColor('FF550B')
                             .setTitle('Search Query Error')
-                            .setDescription('<@!' + message.author.id + '>, your inputted search query `' + param + '` is not a valid ICAO code, to try a new search query, simply run `.sc search` again');
-                        return message.channel.send(embed);
+                            .setDescription('Your inputted search query `' + param + '` is not a valid ICAO code, to try a new search query, simply run `.sc search` again');
+                        return message.reply(embed);
                     }
                 });
                 options = {
@@ -101,11 +101,17 @@ class SCCommand extends Command {
                 if(response.data.length > 0) {
                     const pagesArray = [];
                     response.data.forEach(request => {
-                        if (request.departure.length > 1) {
+                        if (request.departure && request.departure.length > 1) {
                             request.departure = request.departure.join('/');
                         }
-                        if (request.arrival.length > 1) {
+                        if (request.arrival && request.arrival.length > 1) {
                             request.arrival = request.arrival.join('/');
+                        }
+                        if (request.departure == null) {
+                            request.departure = 'N/A';
+                        }
+                        if (request.arrival == null) {
+                            request.arrival = 'N/A';
                         }
                         const attachment = new MessageAttachment('./assets/icon.png', 'icon.png');
                         const embed = new MessageEmbed()
@@ -141,6 +147,7 @@ class SCCommand extends Command {
             console.log(err);
         });
     }
+
     async add(message, params, token) {
         let data = {
             departure: '',
@@ -260,6 +267,12 @@ class SCCommand extends Command {
                                                 if (response.data.message.arrival == null) {
                                                     response.data.message.arrival = 'N/A';
                                                 }
+                                                if (response.data.message.departure && response.data.message.departure.length > 1) {
+                                                    response.data.message.departure = response.data.message.departure.join('/');
+                                                }
+                                                if (response.data.message.arrival && response.data.message.arrival.length > 1) {
+                                                    response.data.message.arrival = response.data.message.arrival.join('/');
+                                                }
                                                 const embed = new MessageEmbed()
                                                     .setTitle('Confirmation of your Shared Cockpit Request')
                                                     .setColor('FF550B')
@@ -290,8 +303,69 @@ class SCCommand extends Command {
             });
         });
     }
-    async accept(message, params, token) {}
-    async delete(message, params, token) {}
+
+    async accept(message, params, token) {
+        const embed = new MessageEmbed()
+            .setColor('FF550B')
+            .setTitle('Accept a Flight Request')
+            .setDescription('Enter the ID of the request you would like to accept.\nThis can be found by running `.sc search`');
+        message.channel.send(embed);
+        message.channel.awaitMessages(m=> m.author.id === message.author.id, {max: 1, time: 10000}).then(collected => {
+            var requestId = parseInt(collected.first().content, 10);
+            if (typeof requestId == 'number') {
+                const data = {
+                    discord_id: message.author.id,
+                    id: requestId
+                };
+                axios.post(`${process.env.REQUEST_URL}api/accept`, data, {
+                    headers: {
+                        'Accept':'application/json',
+                        'Authorization': 'Bearer ' + token,
+                    }
+                }).then(response => {
+                    if (response.data.code == '200') {
+                        if (response.data.message.departure == null) {
+                            response.data.message.departure = 'N/A';
+                        }
+                        if (response.data.message.arrival == null) {
+                            response.data.message.arrival = 'N/A';
+                        }
+                        if (response.data.message.departure && response.data.message.departure.length > 1) {
+                            response.data.message.departure = response.data.message.departure.join('/');
+                        }
+                        if (response.data.message.arrival && response.data.message.arrival.length > 1) {
+                            response.data.message.arrival = response.data.message.arrival.join('/');
+                        }
+                        console.log(response.data.message);
+                        const embed = new MessageEmbed()
+                            .setColor('FF550B')
+                            .setTitle('Request Acceptance Confirmation')
+                            .setDescription(`This is a confirmation of your acceptance of ${response.data.message.requestee.username}'s request, the details are as follows:`)
+                            .addField('Departure', response.data.message.departure, true)
+                            .addField('Arrival', response.data.message.arrival, true)
+                            .addField('Aircraft', response.data.message.aircraft.name)
+                            .setTimestamp(response.data.message.created_at);
+                        message.reply(embed);
+                    } else {
+                        const embed = new MessageEmbed()
+                            .setTitle('There has been an error while accepting the request')
+                            .setColor('FF550B')
+                            .setDescription(response.data.message);
+                        message.reply(embed);
+                    }
+                }).catch(err => {
+                    console.log(err);
+                });
+            } else {
+                const embed = new MessageEmbed()
+                    .setColor('FF550B')
+                    .setTitle('Request Acceptance Error')
+                    .setDescription('Your inputted request ID `' + param + '` is not a valid ID\nTo try again, simply run `.sc accept`');
+                return message.reply(embed);
+            }
+        });
+    }
+
     async help(message, params) {
         const embed = new MessageEmbed()
             .setColor('FF550B')
@@ -299,8 +373,8 @@ class SCCommand extends Command {
             .setDescription('Below is a list of all the available Shared Cockpit command options and their usage with some examples.\nYou are required to link your Copilot account to discord for any commands other than the search command, this can be done at https://multicrew.co.uk/connect')
             .addField('🔍 Search', 'Search all public Shared Cockpit Requests\nUsage: `.sc search`')
             .addField('✅  Accept', 'Accept a Shared Cockpit Request\nUsage: `.sc accept')
-            .addField('➕ Add', 'Create a public Shared Cockpit Request\nUsage: `.sc add`')
-            .addField('🗑 Delete', 'Delete a Shared Cockpit Request\nUsage: `.sc delete`');
+            .addField('➕ Add', 'Create a public Shared Cockpit Request\nUsage: `.sc add`');
+            //.addField('🗑 Delete', 'Delete a Shared Cockpit Request\nUsage: `.sc delete`');
         message.channel.send(embed);
     }
 };
