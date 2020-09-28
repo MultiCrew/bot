@@ -241,15 +241,36 @@ class SCCommand extends Command {
                             msgEmbed.awaitReactions((reaction, user) => user.id == message.author.id && (reaction.emoji.name == '👍' || reaction.emoji.name == '👎'),
                                 {max: 1, time: 30000}).then(collected => {
                                 if (collected.first().emoji.name == '👍') {
-                                    console.log('approved');
-                                    msgEmbed.delete();
+                                    msgEmbed.delete().catch(err => {
+                                        console.log(err);
+                                    });
                                     if (fail) {
                                         return;
                                     } else {
-                                        console.log(data);
+                                        axios.post(`${process.env.REQUEST_URL}api/create`, data, {
+                                            headers: {
+                                                'Accept':'application/json',
+                                                'Authorization': 'Bearer ' + token,
+                                            }
+                                        }).then(response => {
+                                            if (response.data.message.departure == null) {
+                                                response.data.message.departure = 'N/A';
+                                            }
+                                            if (response.data.message.arrival == null) {
+                                                response.data.message.arrival = 'N/A';
+                                            }
+                                            const embed = new MessageEmbed()
+                                                .setTitle('Confirmation of your Shared Cockpit Request')
+                                                .setColor('FF550B')
+                                                .setDescription('Below are the details of your new created public request')
+                                                .addField('Departure', response.data.message.departure, true)
+                                                .addField('Arrival', response.data.message.arrival, true)
+                                                .addField('Aircraft ID', response.data.message.aircraft_id)
+                                                .setTimestamp(response.data.message.created_at);
+                                            message.reply(embed);
+                                        });
                                     }
                                 } else
-                                    console.log('denied');
                                     msgEmbed.delete();
                                     return;
                                 });
