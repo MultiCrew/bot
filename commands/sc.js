@@ -253,21 +253,29 @@ class SCCommand extends Command {
                                                 'Authorization': 'Bearer ' + token,
                                             }
                                         }).then(response => {
-                                            if (response.data.message.departure == null) {
-                                                response.data.message.departure = 'N/A';
+                                            if (response.data.code == '200') {
+                                                if (response.data.message.departure == null) {
+                                                    response.data.message.departure = 'N/A';
+                                                }
+                                                if (response.data.message.arrival == null) {
+                                                    response.data.message.arrival = 'N/A';
+                                                }
+                                                const embed = new MessageEmbed()
+                                                    .setTitle('Confirmation of your Shared Cockpit Request')
+                                                    .setColor('FF550B')
+                                                    .setDescription('Below are the details of your new created public request')
+                                                    .addField('Departure', response.data.message.departure, true)
+                                                    .addField('Arrival', response.data.message.arrival, true)
+                                                    .addField('Aircraft ID', response.data.message.aircraft_id)
+                                                    .setTimestamp(response.data.message.created_at);
+                                                message.reply(embed);
+                                            } else {
+                                                const embed = new MessageEmbed()
+                                                    .setTitle('There has been an error while creating your request')
+                                                    .setColor('FF550B')
+                                                    .setDescription(response.data.message);
+                                                message.reply(embed);
                                             }
-                                            if (response.data.message.arrival == null) {
-                                                response.data.message.arrival = 'N/A';
-                                            }
-                                            const embed = new MessageEmbed()
-                                                .setTitle('Confirmation of your Shared Cockpit Request')
-                                                .setColor('FF550B')
-                                                .setDescription('Below are the details of your new created public request')
-                                                .addField('Departure', response.data.message.departure, true)
-                                                .addField('Arrival', response.data.message.arrival, true)
-                                                .addField('Aircraft ID', response.data.message.aircraft_id)
-                                                .setTimestamp(response.data.message.created_at);
-                                            message.reply(embed);
                                         });
                                     }
                                 } else
