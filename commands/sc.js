@@ -15,7 +15,7 @@ class SCCommand extends Command {
             args: [
                 {
                     id: 'type',
-                    type: ['search', 'add', 'accept', 'delete', 'help'],
+                    type: ['search', 'add', 'accept', 'help'],
                     default: 'help'
                 }
             ]
@@ -33,9 +33,6 @@ class SCCommand extends Command {
                 break;
             case 'accept':
                 return this.accept(message, args, token);
-                break;
-            case 'delete':
-                return this.delete(message, args, token);
                 break;
             case 'help':
                 return this.help(message, args);
