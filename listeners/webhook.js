@@ -19,13 +19,24 @@ class WebhookListener extends Listener {
                 break;
             case 'connection':
                 this.client.users.fetch(data.id).then(user => {
-                    const guild = this.client.guilds.cache.get('440545668168286249');
-                    for (let i = 0; i < data.optional.length; i++) {
-                        const id = data.optional[i];
-                        if(id == '440550777912819712') { continue; }
+                    const roles = [];
+                    Object.entries(data).forEach(entry => {
+                        const [key, value] = entry;
+                        if (key.includes('optional')) {
+                            const index = key.split(/[\[\]']+/g)[1];
+                            roles[index] = value;
+                        }
+                    });
+
+                    const guild = this.client.guilds.cache.get('440545668168286249'); // MultiCrew Discord Guild ID
+                    for (let i = 0; i < roles.length; i++) {
+                        const id = roles[i];
+                        if(id == '136184427318476800') { continue; } // MultiCrew Team Role ID (will cause permission errors if not skipped)
                         let role = guild.roles.cache.get(id);
                         const member = guild.member(user);
-                        member.roles.add(role);
+                        member.roles.add(role).catch(err => {
+                            console.log(err);
+                        });
                     }
                     user.send(data.message);
                 });
