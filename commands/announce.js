@@ -38,6 +38,15 @@ class AnnounceCommand extends Command {
 						retry: 'That is not a valid channel, please try again',
 						cancel: 'Command has been cancelled.',
 					}
+				},
+				{
+					id: 'mention',
+					type: ['everyone', 'here', 'none'],
+					default: 'none',
+					prompt: {
+						start: 'Would you like to mention everyone, here, or no one. Reply with `everyone`, `here` or `none` for your respective choice',
+						retry: 'Your chosen mention is invalid'
+					}
 				}
 			]
 		});
@@ -67,7 +76,11 @@ class AnnounceCommand extends Command {
 			embed.setImage(args.image);
 		}
 		const channel = this.client.channels.cache.get(args.channel.id);
-		channel.send(embed);
+		if (args.mention == 'none') {
+			channel.send(embed);
+		} else {
+			channel.send(`@${args.mention}`, embed);
+		}
 	}
 }
 
