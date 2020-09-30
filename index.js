@@ -1,18 +1,55 @@
-const { Client } = require('klasa');
-const { config, token } = require('./config');
+const { AkairoClient, CommandHandler, ListenerHandler } = require('discord-akairo');
+require('dotenv').config();
+const express = require('express');
+const bodyParser = require("body-parser");
+const app = express();
+const port = 3000;
 
-Client.use(require('klasa-dashboard-hooks'));
+class MyClient extends AkairoClient {
+    constructor() {
+        super({
+            // Options for Akairo go here.
+        }, {
+            // Options for discord.js goes here.
+        });
 
-class MyKlasaClient extends Client {
+        this.commandHandler = new CommandHandler(this, {
+            directory: './commands/',
+            prefix: '.'
+		});
 
-    constructor(...args) {
-        super(...args);
-
-        // Add any properties to your Klasa Client
+		this.listenerHandler = new ListenerHandler(this, {
+            directory: './listeners/'
+		});
+		
+        this.listenerHandler.setEmitters({
+            process: process,
+        });
+		
+		this.commandHandler.loadAll();
+        this.listenerHandler.loadAll();
     }
-
-    // Add any methods to your Klasa Client
-
 }
 
-new MyKlasaClient(config).login(token);
+const client = new MyClient();
+client.login(process.env.DISCORD_TOKEN);
+
+client.on('ready', () => {
+    client.user.setStatus('idle');
+    client.user.setActivity('.sc', {
+        type: 'WATCHING'
+    });
+    console.log(`Successfully initialized.`);
+});
+
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+
+app.post('/webhook', (req, res) => {
+    process.emit('webhook', req.body);
+    return res.end();
+});
+
+app.listen(port, () => {
+  console.log(`Server listening at http://localhost:${port}`);
+});
