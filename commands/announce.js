@@ -53,8 +53,8 @@ class AnnounceCommand extends Command {
 	}
 
 	userPermissions(message) {
-		if (!message.member.roles.cache.some(role => role.name === 'Admin')) {
-			return 'Admin';
+		if (!message.member.roles.cache.some(role => role.name === 'MultiCrew Team')) {
+			return 'MultiCrew Team';
 		}
 
 		return null;
