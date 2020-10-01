@@ -369,7 +369,7 @@ class SCCommand extends Command {
             .setTitle('Shared Cockpit Command Options')
             .setDescription('Below is a list of all the available Shared Cockpit command options and their usage with some examples.\nYou are required to link your Copilot account to discord for any commands other than the search command, this can be done at https://multicrew.co.uk/connect')
             .addField('🔍 Search', 'Search all public Shared Cockpit Requests\nUsage: `.sc search`')
-            .addField('✅  Accept', 'Accept a Shared Cockpit Request\nUsage: `.sc accept')
+            .addField('✅  Accept', 'Accept a Shared Cockpit Request\nUsage: `.sc accept`')
             .addField('➕ Add', 'Create a public Shared Cockpit Request\nUsage: `.sc add`');
             //.addField('🗑 Delete', 'Delete a Shared Cockpit Request\nUsage: `.sc delete`');
         message.channel.send(embed);
