@@ -23,7 +23,7 @@ class SCCommand extends Command {
     }
 
     async exec(message, args) {
-        const token = await getToken();
+        const token = this.client.apiToken;
         switch (args.type) {
             case 'search':
                 return this.search(message, args, token);
@@ -375,19 +375,5 @@ class SCCommand extends Command {
         message.channel.send(embed);
     }
 };
-
-// Get client token from server
-async function getToken() {
-    var data = {
-        'grant_type': 'client_credentials',
-        'client_id': process.env.CLIENT_ID,
-        'client_secret': process.env.CLIENT_SECRET
-    };
-    const token = await axios.post(`${process.env.REQUEST_URL}oauth/token`, data)
-    .then(function(response) {
-        return response.data['access_token'];
-    });
-    return token;
-}
 
 module.exports = SCCommand;

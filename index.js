@@ -1,4 +1,5 @@
 const { AkairoClient, CommandHandler, ListenerHandler } = require('discord-akairo');
+const axios = require('axios');
 require('dotenv').config();
 const express = require('express');
 const bodyParser = require("body-parser");
@@ -28,7 +29,25 @@ class MyClient extends AkairoClient {
 		
 		this.commandHandler.loadAll();
         this.listenerHandler.loadAll();
+
+        getToken().then(token => {
+            this.apiToken = token;
+        });
     }
+}
+
+// Get client token from server
+async function getToken() {
+    var data = {
+        'grant_type': 'client_credentials',
+        'client_id': process.env.CLIENT_ID,
+        'client_secret': process.env.CLIENT_SECRET
+    };
+    const token = await axios.post(`${process.env.REQUEST_URL}oauth/token`, data)
+    .then(function(response) {
+        return response.data['access_token'];
+    });
+    return token;
 }
 
 const client = new MyClient();
